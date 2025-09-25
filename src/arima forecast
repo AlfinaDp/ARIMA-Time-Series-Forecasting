@@ -1,0 +1,67 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import acf, pacf
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.arima.model import ARIMA
+
+# Fungsi untuk membuat tabel auto korelasi dan tabel parsial
+def plot_acf_pacf(data):
+    fig, ax = plt.subplots(2, 2, figsize=(12, 8))
+
+    # Tabel Data Asli
+    ax[0, 0].plot(data)
+    ax[0, 0].set_title('Original Data')
+
+    # Tabel Auto Korelasi
+    plot_acf(data, lags=20, ax=ax[0, 1])
+    ax[0, 1].set_title('Autocorrelation Function (ACF)')
+
+    # Tabel Spektrum Garis
+    ax[1, 0].magnitude_spectrum(data, Fs=1, scale='dB', color='C1')
+    ax[1, 0].set_title('Spectral Density (Line Spectrum)')
+
+    # Tabel Parsial Auto Korelasi
+    plot_pacf(data, lags=20, ax=ax[1, 1])
+    ax[1, 1].set_title('Partial Autocorrelation Function (PACF)')
+
+    plt.tight_layout()
+    plt.show()
+
+# Fungsi untuk memprediksi data dengan model ARIMA
+def arima_forecast(data, order):
+    model = ARIMA(data, order=order)
+    fit_model = model.fit()
+    forecast = fit_model.predict(start=len(data), end=len(data) + 10, typ='levels', dynamic=False)
+
+    return forecast
+
+# Generate data contoh
+np.random.seed(42)
+data = np.cumsum(np.random.normal(0, 1, 100))
+
+# Menampilkan tabel data asli, auto korelasi, spektrum garis, dan parsial
+plot_acf_pacf(data)
+
+# Melakukan peramalan dengan model ARIMA dan menampilkan hasil
+order = (1, 1, 1)  # Ganti order sesuai dengan analisis ACF dan PACF
+forecast = arima_forecast(data, order)
+
+# Menampilkan hasil peramalan
+df_forecast = pd.DataFrame(forecast, columns=['ARIMA Forecast'])
+print("\nHasil Peramalan dengan ARIMA:")
+print(df_forecast)
+
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import numpy as np
+
+mse = mean_squared_error(data[-10:], forecast[:10])
+mae = mean_absolute_error(data[-10:], forecast[:10])
+rmse = np.sqrt(mse)
+print("MSE:", mse, "RMSE:", rmse, "MAE:", mae)
+
+plt.figure(figsize=(10,5))
+plt.plot(data, label='Original Data')
+plt.plot(range(len(data), len(data)+len(forecast)), forecast, label='ARIMA Forecast', color='red')
+plt.legend()
+plt.show()
